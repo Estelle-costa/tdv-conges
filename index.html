@@ -594,10 +594,13 @@ function getSD(staffId) {
 // ferieSet = Set of ISO date strings to exclude (staff's own feries)
 function workdays(s, e, ferieSet) {
   const fs = ferieSet || new Set();
-  let n=0, c=new Date(s+'T00:00:00'), end=new Date(e+'T00:00:00');
+  const parts_s=s.split('-'), parts_e=e.split('-');
+  let c=new Date(Number(parts_s[0]),Number(parts_s[1])-1,Number(parts_s[2]));
+  const end=new Date(Number(parts_e[0]),Number(parts_e[1])-1,Number(parts_e[2]));
+  let n=0;
   while(c<=end){
     const dow=c.getDay();
-    const iso=c.toISOString().split('T')[0];
+    const iso=dt(c.getFullYear(),c.getMonth()+1,c.getDate());
     if(dow!==0 && dow!==6 && !fs.has(iso)) n++;
     c.setDate(c.getDate()+1);
   }
@@ -613,7 +616,8 @@ function ferieSet(staffId) {
 function totalCP(periods, fs){ return periods.reduce((a,p)=>a+workdays(p.start,p.end,fs),0); }
 
 function fmt(str){
-  return new Date(str+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  const fp=str.split('-');
+  return new Date(Number(fp[0]),Number(fp[1])-1,Number(fp[2])).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
 }
 
 function countryName(code){
@@ -728,9 +732,11 @@ function buildDayMap() {
   state.staff.forEach((s,idx) => {
     const d = getSD(s.id);
     d.cp.forEach(p => {
-      let c=new Date(p.start+'T00:00:00'),end=new Date(p.end+'T00:00:00');
+      const ps=p.start.split('-'), pe=p.end.split('-');
+      let c=new Date(Number(ps[0]),Number(ps[1])-1,Number(ps[2]));
+      const end=new Date(Number(pe[0]),Number(pe[1])-1,Number(pe[2]));
       while(c<=end){
-        const k=fmtISO(c);
+        const k=dt(c.getFullYear(),c.getMonth()+1,c.getDate());
         if(!map[k]) map[k]={cp:[],feries:[]};
         map[k].cp.push({color:s.color,idx});
         c.setDate(c.getDate()+1);
@@ -744,7 +750,7 @@ function buildDayMap() {
   return map;
 }
 
-function fmtISO(d){ return d.toISOString().split('T')[0]; }
+function fmtISO(d){ return dt(d.getFullYear(),d.getMonth()+1,d.getDate()); }
 
 function renderCalendar() {
   const grid = document.getElementById('monthsGrid');
@@ -775,7 +781,7 @@ function renderCalendar() {
     for(let day=1;day<=last.getDate();day++){
       const ds=`${year}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const info=dm[ds]||{cp:[],feries:[]};
-      const d2=new Date(ds).getDay();
+      const dp=ds.split('-'); const d2=new Date(Number(dp[0]),Number(dp[1])-1,Number(dp[2])).getDay();
       const isWknd=d2===0||d2===6;
       let cls='dc', bg='', title='';
 
